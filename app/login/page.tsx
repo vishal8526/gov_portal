@@ -53,9 +53,12 @@ function LoginPageContent() {
         }),
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await response.json()
+        : { error: await response.text() };
 
-      if (data.success) {
+      if (response.ok && data.success) {
         // Redirect based on role
         const role = data.user.role;
         if (role === 'PARENT') {

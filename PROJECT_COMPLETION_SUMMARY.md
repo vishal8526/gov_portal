@@ -17,8 +17,8 @@
 
 - ✅ Next.js 16 (App Router) with Turbopack
 - ✅ TypeScript (strict mode)
-- ✅ Prisma 7 ORM with PostgreSQL
-- ✅ PostgreSQL adapter configuration (PrismaPg)
+- ✅ Prisma 7 ORM with SQLite
+- ✅ SQLite adapter configuration (PrismaBetterSqlite3)
 - ✅ Service-oriented architecture pattern
 - ✅ Zod schema validation
 - ✅ Cookie-based authentication with bcrypt
@@ -203,7 +203,7 @@ Staff:   reviewer@govschool.edu.in / password123
 | ---------- | --------------- | ------- |
 | Frontend   | React           | 19.2.4  |
 | Framework  | Next.js         | 16.2.1  |
-| Database   | PostgreSQL      | Latest  |
+| Database   | SQLite          | Latest  |
 | ORM        | Prisma          | 7.6.0   |
 | Validation | Zod             | 4.3.6   |
 | Auth       | Custom + bcrypt | 3.0.3   |
@@ -305,7 +305,7 @@ npm start
 ### Environment Setup
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME?sslmode=require"
+DATABASE_URL="file:./dev.db"  # SQLite
 NODE_ENV="production"
 ```
 
