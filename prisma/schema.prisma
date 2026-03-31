@@ -2,7 +2,7 @@
 // GovSchool Portal — Prisma Database Schema
 // ============================================================================
 // Defines all data models for the government school admission and scholarship
-// management system. Uses SQLite for zero-config local development.
+// management system. Uses PostgreSQL for Vercel-friendly deployment.
 // ============================================================================
 
 generator client {
@@ -10,7 +10,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // ============================================================================

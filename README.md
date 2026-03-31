@@ -25,7 +25,7 @@ This portal enables **parents** to apply for school admissions and scholarships,
 ### Prerequisites
 
 - Node.js 18+ (with npm)
-- SQLite (included)
+- PostgreSQL database for deployment (Neon, Supabase, Railway, or Vercel Postgres)
 
 ### Installation & Setup
 
@@ -33,7 +33,7 @@ This portal enables **parents** to apply for school admissions and scholarships,
 # Install dependencies
 npm install
 
-# Initialize database
+# Initialize database schema
 npx prisma db push
 
 # Seed with demo data
@@ -101,7 +101,7 @@ Admin:   admin@govschool.edu.in / password123
 **Tech Stack:**
 
 - React 19 + Next.js 16 (App Router)
-- Prisma 7 + SQLite
+- Prisma 7 + PostgreSQL
 - TypeScript + Zod validation
 - Cookie-based authentication
 - CSS Modules + design system
@@ -157,17 +157,25 @@ npm test                  # Run tests (when configured)
 
 ## 🚢 Deployment
 
+### Vercel setup
+
+1. Create a PostgreSQL database for production.
+2. Add `DATABASE_URL` in Vercel Project Settings.
+3. Import the GitHub repo into Vercel.
+4. Deploy the app.
+
+Recommended environment variable:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DB_NAME?sslmode=require"
+```
+
 ```bash
 npm run build   # Builds production-optimized bundle
 npm start       # Runs production server on port 3000
 ```
 
-Set environment variables in `.env`:
-
-```env
-DATABASE_URL="file:./dev.db"
-NODE_ENV="production"
-```
+Set environment variables in `.env` for local development with the same database.
 
 ---
 

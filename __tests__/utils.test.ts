@@ -2,6 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { calculatePriorityScore, checkScholarshipEligibility } from '@/lib/utils';
 import { getCurrentAcademicYear } from '@/services/seat-allocation.service';
 
+vi.mock('@/lib/prisma', () => ({
+  prisma: {},
+}));
+
 describe('utility helpers', () => {
   afterEach(() => {
     vi.useRealTimers();
