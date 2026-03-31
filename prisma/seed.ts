@@ -10,28 +10,14 @@
  * ============================================================================
  */
 
-import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { Pool } from 'pg';
-
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error('DATABASE_URL is required to run the seed script.');
-}
-
-const pool = new Pool({
-  connectionString,
-  max: 5,
-  ssl:
-    process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: false }
-      : undefined,
-});
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg(pool),
+  adapter: new PrismaBetterSqlite3({
+    url: process.env.DATABASE_URL ?? 'file:./dev.db',
+  }),
 });
 
 async function main() {

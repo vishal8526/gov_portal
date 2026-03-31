@@ -7,35 +7,16 @@
  * 
  * Prisma v7 changes:
  * - PrismaClient now requires an adapter or accelerateUrl
- * - Postgres deployment uses @prisma/adapter-pg for Vercel compatibility
+ * - For SQLite, we use @prisma/adapter-better-sqlite3
  * ============================================================================
  */
 
-import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: InstanceType<typeof PrismaClient> | undefined;
-  pool: Pool | undefined;
 };
-
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error('DATABASE_URL is required. Set it in Vercel and local .env.');
-}
-
-const pool =
-  globalForPrisma.pool ??
-  new Pool({
-    connectionString,
-    max: 5,
-    ssl:
-      process.env.NODE_ENV === 'production'
-        ? { rejectUnauthorized: false }
-        : undefined,
-  });
 
 /**
  * Singleton Prisma Client instance.
@@ -45,13 +26,14 @@ const pool =
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: new PrismaPg(pool),
+    adapter: new PrismaBetterSqlite3({
+      url: process.env.DATABASE_URL ?? 'file:./dev.db',
+    }),
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
-  globalForPrisma.pool = pool;
 }
 
 export default prisma;
