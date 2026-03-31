@@ -136,9 +136,7 @@ export default function LandingPage() {
         margin: '0 auto var(--space-16)', 
         padding: '0 var(--space-6)',
         position: 'relative',
-        zIndex: 1,
-        contentVisibility: 'auto',
-        containIntrinsicSize: '300px'
+        zIndex: 1 
       }}>
         <div className="card" style={{ textAlign: 'center' }}>
           <h3 style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--text-lg)' }}>
@@ -176,9 +174,7 @@ export default function LandingPage() {
         padding: 'var(--space-6)', 
         borderTop: '1px solid var(--border-default)',
         position: 'relative',
-        zIndex: 1,
-        contentVisibility: 'auto',
-        containIntrinsicSize: '120px'
+        zIndex: 1 
       }}>
         <p className="text-sm text-muted">
           © 2025 GovSchool Portal — Government School Admission & Scholarship Management System
