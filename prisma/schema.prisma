@@ -1,0 +1,215 @@
+// ============================================================================
+// GovSchool Portal — Prisma Database Schema
+// ============================================================================
+// Defines all data models for the government school admission and scholarship
+// management system. Uses SQLite for zero-config local development.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================================================
+// User Model — Supports both Parent and Staff roles
+// ============================================================================
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String   @map("password_hash")
+  role         String   @default("PARENT") // PARENT | STAFF | ADMIN
+  phone        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  applications     Application[]   @relation("ParentApplications")
+  reviewedApps     Application[]   @relation("ReviewerApplications")
+  staffNotes       StaffNote[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  seatAssignments  SeatAssignment[]
+
+  @@map("users")
+}
+
+// ============================================================================
+// Application Model — Core entity for both admissions and scholarships
+// ============================================================================
+// Status lifecycle: DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED/REJECTED/WAITLISTED
+// Priority scoring is computed based on eligibility criteria and urgency factors
+// ============================================================================
+model Application {
+  id               String    @id @default(uuid())
+  parentId         String    @map("parent_id")
+  type             String    // ADMISSION | SCHOLARSHIP
+  status           String    @default("SUBMITTED") // DRAFT | SUBMITTED | UNDER_REVIEW | APPROVED | REJECTED | WAITLISTED
+  priorityScore    Int       @default(0) @map("priority_score")
+
+  // Student Information
+  studentName      String    @map("student_name")
+  studentDob       DateTime  @map("student_dob")
+  studentGender    String    @map("student_gender")
+  gradeApplying    Int       @map("grade_applying")
+  previousSchool   String?   @map("previous_school")
+  previousGradePct Float?    @map("previous_grade_pct")
+
+  // Contact & Demographics
+  address          String
+  phone            String
+  familyIncome     Float?    @map("family_income")
+
+  // Document references stored as JSON string
+  documentsJson    String?   @map("documents_json")
+
+  // Review tracking
+  assignedReviewerId String? @map("assigned_reviewer_id")
+  submittedAt      DateTime  @default(now()) @map("submitted_at")
+  reviewedAt       DateTime? @map("reviewed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  parent           User      @relation("ParentApplications", fields: [parentId], references: [id])
+  assignedReviewer User?     @relation("ReviewerApplications", fields: [assignedReviewerId], references: [id])
+  scholarshipDetail ScholarshipDetail?
+  staffNotes       StaffNote[]
+  auditLogs        AuditLog[]
+  seatAssignment   SeatAssignment?
+  notifications    Notification[]
+
+  @@index([parentId])
+  @@index([status])
+  @@index([type])
+  @@index([assignedReviewerId])
+  @@map("applications")
+}
+
+// ============================================================================
+// ScholarshipDetail — Extended data for scholarship applications
+// ============================================================================
+// Linked 1:1 to Application when type=SCHOLARSHIP. Contains eligibility
+// criteria that feed into automatic eligibility pre-checks.
+// ============================================================================
+model ScholarshipDetail {
+  id                String  @id @default(uuid())
+  applicationId     String  @unique @map("application_id")
+  scholarshipType   String  @map("scholarship_type") // MERIT | NEED_BASED | SPORTS | SPECIAL_CATEGORY
+  category          String? // SC | ST | OBC | GENERAL | EWS
+  achievements      String? // Academic/sports achievements text
+  bplCertificate    Boolean @default(false) @map("bpl_certificate")
+  incomeCertificate Boolean @default(false) @map("income_certificate")
+  eligible          Boolean @default(false)
+  eligibilityNotes  String? @map("eligibility_notes")
+
+  // Relation
+  application       Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("scholarship_details")
+}
+
+// ============================================================================
+// SeatAllocation — Tracks capacity per grade per academic year
+// ============================================================================
+model SeatAllocation {
+  id             String  @id @default(uuid())
+  grade          Int
+  totalSeats     Int     @map("total_seats")
+  allocatedSeats Int     @default(0) @map("allocated_seats")
+  academicYear   String  @map("academic_year")
+
+  // Relations
+  assignments    SeatAssignment[]
+
+  @@unique([grade, academicYear])
+  @@map("seat_allocations")
+}
+
+// ============================================================================
+// SeatAssignment — Links an approved application to a specific seat allocation
+// ============================================================================
+model SeatAssignment {
+  id            String   @id @default(uuid())
+  applicationId String   @unique @map("application_id")
+  allocationId  String   @map("allocation_id")
+  assignedById  String   @map("assigned_by_id")
+  status        String   @default("ASSIGNED") // ASSIGNED | CONFIRMED | RELEASED
+  assignedAt    DateTime @default(now()) @map("assigned_at")
+
+  // Relations
+  application   Application    @relation(fields: [applicationId], references: [id])
+  allocation    SeatAllocation @relation(fields: [allocationId], references: [id])
+  assignedBy    User           @relation(fields: [assignedById], references: [id])
+
+  @@map("seat_assignments")
+}
+
+// ============================================================================
+// StaffNote — Internal notes on applications (not visible to parents)
+// ============================================================================
+model StaffNote {
+  id            String   @id @default(uuid())
+  applicationId String   @map("application_id")
+  staffId       String   @map("staff_id")
+  content       String
+  isInternal    Boolean  @default(true) @map("is_internal")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  staff         User        @relation(fields: [staffId], references: [id])
+
+  @@index([applicationId])
+  @@map("staff_notes")
+}
+
+// ============================================================================
+// AuditLog — Immutable record of all status changes and key actions
+// ============================================================================
+// Provides full traceability for compliance and accountability.
+// Stores before/after snapshots as JSON for detailed diff viewing.
+// ============================================================================
+model AuditLog {
+  id           String   @id @default(uuid())
+  entityType   String   @map("entity_type") // APPLICATION | SEAT | SCHOLARSHIP
+  entityId     String   @map("entity_id")
+  action       String   // CREATED | STATUS_CHANGED | ASSIGNED | REVIEWED | NOTE_ADDED | SEAT_ALLOCATED
+  changedById  String   @map("changed_by_id")
+  oldValue     String?  @map("old_value")  // JSON string of previous state
+  newValue     String?  @map("new_value")  // JSON string of new state
+  description  String?  // Human-readable description of the change
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  changedBy    User        @relation(fields: [changedById], references: [id])
+  application  Application? @relation(fields: [entityId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([changedById])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// Notification — In-app notifications for status updates
+// ============================================================================
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  applicationId String?  @map("application_id")
+  title         String
+  message       String
+  isRead        Boolean  @default(false) @map("is_read")
+  type          String   @default("INFO") // INFO | SUCCESS | WARNING | ERROR
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user          User         @relation(fields: [userId], references: [id])
+  application   Application? @relation(fields: [applicationId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
